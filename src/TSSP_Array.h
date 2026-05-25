@@ -41,6 +41,11 @@ public:
     uint8_t get_direction_simple();
     uint8_t get_strength();
 private:
+    static constexpr uint8_t noise_floor = 3;
+    static constexpr int16_t angle_offset_deg = 0;
+    static constexpr float direction_alpha = 0.35f;
+    static constexpr float strength_alpha = 0.30f;
+
     uint16_t direction_advanced;
     uint8_t direction_simple;
     uint8_t strength;
@@ -50,6 +55,9 @@ private:
     uint8_t indexes[TSSP_NUM] = {0};
     float x_values[TSSP_NUM] = {0};
     float y_values[TSSP_NUM] = {0};
+    float filtered_x = 0.0f;
+    float filtered_y = 0.0f;
+    float filtered_strength = 0.0f;
 };
 
 #endif // TSSP_ARRAY_H

@@ -15,15 +15,22 @@ void TSSP_Array::update() {
 		    values[j] += 1 - digitalRead(pins[j]);
 	    }
 	}
+    uint16_t total_value = 0;
     uint8_t max_value = 0;
+    uint8_t second_max_value = 0;
     uint8_t max_index = 0;
     float raw_x = 0.0f;
     float raw_y = 0.0f;
 
     for(uint8_t i = 0; i < TSSP_NUM; i++) {
+        total_value += values[i];
+
         if(values[i] > max_value) {
+            second_max_value = max_value;
             max_value = values[i];
             max_index = i;
+        } else if(values[i] > second_max_value) {
+            second_max_value = values[i];
         }
 
         if(values[i] > noise_floor) {
@@ -53,9 +60,14 @@ void TSSP_Array::update() {
         direction_advanced = (uint16_t)roundf(angle_deg);
     }
 
-    filtered_strength += strength_alpha * ((float)max_value - filtered_strength);
-    const float strength_no_floor = filtered_strength > noise_floor ? filtered_strength - noise_floor : 0.0f;
-    strength = (uint8_t)roundf(strength_no_floor * (100.0f / (READ_NUM - noise_floor)));
+    const float baseline = (float)total_value / (float)TSSP_NUM;
+    const float dominant = max_value > baseline ? (float)max_value - baseline : 0.0f;
+    const float support = second_max_value > baseline ? (float)second_max_value - baseline : 0.0f;
+    const float strength_input = (max_value <= noise_floor) ? 0.0f : (dominant * 0.75f + support * 0.25f);
+
+    filtered_strength += strength_alpha * (strength_input - filtered_strength);
+    const float strength_percent = constrain((filtered_strength * 100.0f) / (float)READ_NUM, 0.0f, 100.0f);
+    strength = (uint8_t)roundf(strength_percent);
 
 	for(uint8_t i = 0; i < TSSP_NUM; i++) {
 		values[i] = 0;

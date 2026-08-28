@@ -144,6 +144,7 @@ private:
 
     // UART protocol
     uint8_t m_currentExtMode = 0;
+    uint8_t m_lastPolledMode = 0xFF;
 };
 
 #endif // COLOUR_SENSOR_H

@@ -61,13 +61,14 @@ void Base_Sensor::commWaitForHubIdle(){
     Serial1.end();
 
     unsigned long idletick;
+    unsigned long starttick = millis();
 
     pinMode(m_connSerialTX_pin, OUTPUT);
     digitalWrite(m_connSerialTX_pin, LOW);
 
     pinMode(m_connSerialRX_pin, INPUT);
     idletick = millis();
-    while (1) {
+    while (millis() - starttick <= 3000) {
         if (digitalRead(m_connSerialRX_pin) == LOW) {
             idletick = millis();
         }
@@ -138,7 +139,7 @@ void Base_Sensor::commSendInitSequence(){}
  *      Queries can be read/write according to the requested mode.
  *      This function is specific to one sensor and MUST BE reimplemented.
  * @warning In the situation where the processing of the responses to the
- *      queries from the hub takes longer than 200ms, a disconnection
+ *      queries from the hub takes longer than 2000ms, a disconnection
  *      will be performed here.
  */
 void Base_Sensor::handleModes(){}
@@ -147,7 +148,7 @@ void Base_Sensor::handleModes(){}
 /**
  * @brief Handle the connection process to the hub.
  * @see Protocol queries & responses are processed by `handleModes()`.
- * @warning Do not forget to check at each iteration if `millis() - m_lastAckTick > 200`.
+ * @warning Do not forget to check at each iteration if `millis() - m_lastAckTick > 2000`.
  *      If true, the device must go in reset mode by setting the m_connected
  *      boolean to false.
  */
@@ -161,7 +162,7 @@ void Base_Sensor::process(){
     handleModes();
 
     // Check disconnection from the Hub and go in reset/init mode if needed
-    if (millis() - m_lastAckTick > 200) {
+    if (millis() - m_lastAckTick > 2000) {
         m_connected = false;
     }
 }

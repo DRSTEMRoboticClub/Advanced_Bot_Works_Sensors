@@ -274,6 +274,7 @@ void Colour_Sensor::handleModes() {
     unsigned char header;
     unsigned char mode;
     header = Serial1.read();
+    m_lastAckTick = millis();
     
     #if DEBUG_COMMS
         Serial.print("<\tHeader ");
@@ -281,13 +282,26 @@ void Colour_Sensor::handleModes() {
     #endif
 
     if (header == 0x02) { // NACK
-        m_lastAckTick = millis();
-        // Note: In theory the default mode is always the lowest (0).
-        // If combos mode is enabled, prefer to send this data
-        // if (m_defaultComboModesEnabled) 
-            this->defaultCombosMode();
-        // else
-            // this->sensorColorMode();
+        switch (m_lastPolledMode) {
+            case Colour_Sensor::PBIO_IODEV_MODE_PUP_COLOR_SENSOR__COLOR:
+                this->sensorColorMode();
+                break;
+            case Colour_Sensor::PBIO_IODEV_MODE_PUP_COLOR_SENSOR__REFLT:
+                this->sensorReflectedLightMode();
+                break;
+            case Colour_Sensor::PBIO_IODEV_MODE_PUP_COLOR_SENSOR__AMBI:
+                this->sensorAmbientLight();
+                break;
+            case Colour_Sensor::PBIO_IODEV_MODE_PUP_COLOR_SENSOR__RGB_I:
+                this->sensorRGB_IMode();
+                break;
+            case Colour_Sensor::PBIO_IODEV_MODE_PUP_COLOR_SENSOR__HSV:
+                this->sensorHSVMode();
+                break;
+            default:
+                this->defaultCombosMode();
+                break;
+        }
     } else if (header == 0x43) {
         // "Get value" commands (3 bytes message: header, mode, checksum)
         size_t ret = Serial1.readBytes(m_rxBuf, 2);
@@ -299,6 +313,7 @@ void Colour_Sensor::handleModes() {
             return;
         }
         mode = m_rxBuf[0];
+        m_lastPolledMode = mode;
         #if DEBUG_COMMS
             Serial.print("<\tAsked mode ");
             Serial.println(mode);
@@ -387,6 +402,7 @@ void Colour_Sensor::handleModes() {
             return;
 
         this->m_defaultComboModesEnabled = false;
+        this->m_lastPolledMode = 0xFF;
         // Send acknowledgement
         this->ackResetCombosMode();
 
@@ -412,6 +428,7 @@ void Colour_Sensor::handleModes() {
             return;
 
         this->m_defaultComboModesEnabled = true;
+        this->m_lastPolledMode = 0xFF;
         // Send acknowledgement
         this->ackSetCombosMode();
     }
